@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		E29D93473000709200A30AEA /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = E29D93463000709200A30AEA /* Alamofire */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		E29D88C73000357B00A30AEA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E29D93473000709200A30AEA /* Alamofire in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = AIC;
 			packageProductDependencies = (
+				E29D93463000709200A30AEA /* Alamofire */,
 			);
 			productName = AIC;
 			productReference = E29D88B93000357700A30AEA /* AIC.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = E29D88B03000357700A30AEA;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E29D93453000709200A30AEA /* XCRemoteSwiftPackageReference "Alamofire" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E29D88BA3000357700A30AEA /* Products */;
 			projectDirPath = "";
@@ -578,6 +587,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E29D93453000709200A30AEA /* XCRemoteSwiftPackageReference "Alamofire" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Alamofire/Alamofire.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.12.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E29D93463000709200A30AEA /* Alamofire */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E29D93453000709200A30AEA /* XCRemoteSwiftPackageReference "Alamofire" */;
+			productName = Alamofire;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E29D88B13000357700A30AEA /* Project object */;
 }

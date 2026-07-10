@@ -1,5 +1,5 @@
 //
-//  ArtworkFull.swift
+//  ArtworkDetail.swift
 //  AIC
 //
 //  Created by ahmed on 10/07/2026.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ArtworkFull: Identifiable, Decodable {
+struct ArtworkDetail: Identifiable, Decodable {
     let id: Int
     let title: String?
     let artistDisplay: String?
