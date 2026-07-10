@@ -49,6 +49,30 @@ actor SwiftDataArtworkLocalStore: ModelActor, SearchResultsLocalStoreProtocol, A
         try persist()
     }
 
+    func fetchTotalPages() async throws -> Int? {
+        try metadataEntity()?.totalPages
+    }
+
+    func saveTotalPages(_ totalPages: Int) async throws {
+        if let existing = try metadataEntity() {
+            existing.totalPages = totalPages
+        } else {
+            modelContext.insert(CachedSearchMetadataEntity(totalPages: totalPages))
+        }
+        try persist()
+    }
+
+    func deleteAllPages() async throws {
+        let pages = try LocalStoreErrorMapper.fetch {
+            try modelContext.fetch(FetchDescriptor<CachedSearchPageEntity>())
+        }
+        pages.forEach { modelContext.delete($0) } // cascade removes their artworks
+        if let metadata = try metadataEntity() {
+            modelContext.delete(metadata)
+        }
+        try persist()
+    }
+
     // MARK: - ArtworkDetailLocalStoreProtocol
 
     func fetchDetail(id: Int) async throws -> CachedArtworkDetail? {
@@ -70,6 +94,14 @@ actor SwiftDataArtworkLocalStore: ModelActor, SearchResultsLocalStoreProtocol, A
         try persist()
     }
 
+    func deleteAllDetails() async throws {
+        let details = try LocalStoreErrorMapper.fetch {
+            try modelContext.fetch(FetchDescriptor<CachedArtworkDetailEntity>())
+        }
+        details.forEach { modelContext.delete($0) }
+        try persist()
+    }
+
     // MARK: - Fetch helpers
 
     private func pageEntity(_ pageNumber: Int) throws -> CachedSearchPageEntity? {
@@ -84,6 +116,12 @@ actor SwiftDataArtworkLocalStore: ModelActor, SearchResultsLocalStoreProtocol, A
         var descriptor = FetchDescriptor<CachedArtworkDetailEntity>(
             predicate: #Predicate { $0.artworkId == id }
         )
+        descriptor.fetchLimit = 1
+        return try fetchFirst(descriptor)
+    }
+
+    private func metadataEntity() throws -> CachedSearchMetadataEntity? {
+        var descriptor = FetchDescriptor<CachedSearchMetadataEntity>()
         descriptor.fetchLimit = 1
         return try fetchFirst(descriptor)
     }

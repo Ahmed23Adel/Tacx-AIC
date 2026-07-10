@@ -16,6 +16,7 @@ enum ArtworkCacheContainerFactory {
             CachedSearchPageEntity.self,
             CachedArtworkEntity.self,
             CachedArtworkDetailEntity.self,
+            CachedSearchMetadataEntity.self,
         ])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemoryOnly)
         return try ModelContainer(for: schema, configurations: [configuration])

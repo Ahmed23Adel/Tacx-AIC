@@ -17,4 +17,15 @@ protocol SearchResultsLocalStoreProtocol: Sendable {
 
     /// Removes a cached page if present.
     func deletePage(_ pageNumber: Int) async throws
+
+    /// Returns the total number of pages in the result set, or nil when no
+    /// search metadata has ever been stored.
+    func fetchTotalPages() async throws -> Int?
+
+    /// Stores the total page count for the result set (singleton — overwrites
+    /// any previous value).
+    func saveTotalPages(_ totalPages: Int) async throws
+
+    /// Removes all cached pages, their artworks, and the search metadata.
+    func deleteAllPages() async throws
 }

@@ -13,7 +13,7 @@ final class ArtworkCacheContainerFactoryTests: XCTestCase {
         XCTAssertNoThrow(try ArtworkCacheContainerFactory.make(inMemoryOnly: true))
     }
 
-    func test_make_registersAllThreeEntityTypes() throws {
+    func test_make_registersAllEntityTypes() throws {
         // Regression guard: an entity missing from the factory's Schema would
         // crash at first insert in production. Inserting one of each proves the
         // schema is complete.
@@ -24,6 +24,7 @@ final class ArtworkCacheContainerFactoryTests: XCTestCase {
         context.insert(page)
         context.insert(CachedArtworkEntity(artwork: Fixtures.artwork(), sortIndex: 0, page: page))
         context.insert(CachedArtworkDetailEntity(detail: Fixtures.artworkDetail(), insertedAt: Date(timeIntervalSince1970: 0)))
+        context.insert(CachedSearchMetadataEntity(totalPages: 13))
 
         XCTAssertNoThrow(try context.save())
     }

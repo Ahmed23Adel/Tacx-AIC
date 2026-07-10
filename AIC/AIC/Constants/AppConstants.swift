@@ -15,4 +15,8 @@ enum AppConstants {
     enum API {
         static let pageLimit = 20
     }
+
+    enum Cache {
+        static let timeToLive: TimeInterval = 5 * 60
+    }
 }

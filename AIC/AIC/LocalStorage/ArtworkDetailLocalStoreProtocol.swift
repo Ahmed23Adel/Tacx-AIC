@@ -17,4 +17,7 @@ protocol ArtworkDetailLocalStoreProtocol: Sendable {
 
     /// Removes a cached detail if present.
     func deleteDetail(id: Int) async throws
+
+    /// Removes all cached details.
+    func deleteAllDetails() async throws
 }
