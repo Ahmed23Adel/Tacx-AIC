@@ -7,7 +7,6 @@
 
 import Foundation
 
-// The AIC API wraps every payload in { "data": ... }.
 struct SearchArtworksResponse: Decodable {
     let pagination: Pagination
     let data: [Artwork]
