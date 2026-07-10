@@ -11,6 +11,7 @@ import Alamofire
 final class AlamofireAPIRequester: APIRequester {
     private let baseURL: URL
     private let session: Session
+    private let errorMapper = AFErrorMapper()
 
     init(baseURL: URL, session: Session = .default) {
         self.baseURL = baseURL
@@ -30,23 +31,7 @@ final class AlamofireAPIRequester: APIRequester {
         case .success(let value):
             return value
         case .failure(let error):
-            throw map(error, statusCode: response.response?.statusCode)
+            throw errorMapper.networkError(from: error, statusCode: response.response?.statusCode)
         }
-    }
-
-    private func map(_ error: AFError, statusCode: Int?) -> NetworkError {
-        if case .responseValidationFailed = error, let statusCode {
-            return .serverError(statusCode: statusCode)
-        }
-        if error.isResponseSerializationError {
-            return .decodingFailed(error)
-        }
-        if let urlError = error.underlyingError as? URLError {
-            return .transport(urlError)
-        }
-        if case .invalidURL = error {
-            return .invalidURL
-        }
-        return .unknown(error)
     }
 }
