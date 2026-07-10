@@ -95,6 +95,31 @@ final class LocalStorePersistenceIntegrationTests: XCTestCase {
         XCTAssertEqual(cached?.artworks.map(\.id), [1], "data must live in the container, not the store instance")
     }
 
+    // MARK: - deleteAllPages: row-level verification
+
+    func test_deleteAllPages_leavesZeroPageArtworkAndMetadataRows() async throws {
+        try await sut.savePage(1, artworks: (1...10).map { Fixtures.artwork(id: $0) })
+        try await sut.savePage(2, artworks: (11...15).map { Fixtures.artwork(id: $0) })
+        try await sut.saveTotalPages(13)
+
+        try await sut.deleteAllPages()
+
+        XCTAssertEqual(try pageRowCount(), 0)
+        XCTAssertEqual(try artworkRowCount(), 0, "cascade must clean every page's artwork rows")
+        let metadataCount = try ModelContext(container).fetchCount(FetchDescriptor<CachedSearchMetadataEntity>())
+        XCTAssertEqual(metadataCount, 0)
+    }
+
+    func test_saveTotalPages_repeatedSaves_keepExactlyOneMetadataRow() async throws {
+        // Singleton contract at the row level: upsert, never accumulate.
+        try await sut.saveTotalPages(13)
+        try await sut.saveTotalPages(14)
+        try await sut.saveTotalPages(15)
+
+        let metadataCount = try ModelContext(container).fetchCount(FetchDescriptor<CachedSearchMetadataEntity>())
+        XCTAssertEqual(metadataCount, 1)
+    }
+
     // MARK: - Real save failure through the public API
 
     func test_savePage_onReadOnlyContainer_throwsSaveFailed() async throws {

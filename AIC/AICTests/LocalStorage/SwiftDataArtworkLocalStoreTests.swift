@@ -261,6 +261,87 @@ final class SwiftDataArtworkLocalStoreTests: XCTestCase {
         try await sut.deleteDetail(id: 99)
     }
 
+    // MARK: - totalPages metadata
+
+    func test_fetchTotalPages_whenNeverSaved_returnsNil() async throws {
+        let value = try await sut.fetchTotalPages()
+        XCTAssertNil(value)
+    }
+
+    func test_saveTotalPages_thenFetch_returnsValue() async throws {
+        try await sut.saveTotalPages(13)
+
+        let value = try await sut.fetchTotalPages()
+
+        XCTAssertEqual(value, 13)
+    }
+
+    func test_saveTotalPages_twice_overwritesSingletonValue() async throws {
+        try await sut.saveTotalPages(13)
+
+        try await sut.saveTotalPages(14)
+        let value = try await sut.fetchTotalPages()
+
+        XCTAssertEqual(value, 14)
+    }
+
+    // MARK: - deleteAllPages / deleteAllDetails
+
+    func test_deleteAllPages_removesEveryPageAndMetadata() async throws {
+        try await sut.savePage(1, artworks: [Fixtures.artwork(id: 1)])
+        try await sut.savePage(2, artworks: [Fixtures.artwork(id: 2)])
+        try await sut.saveTotalPages(13)
+
+        try await sut.deleteAllPages()
+
+        let page1 = try await sut.fetchPage(1)
+        let page2 = try await sut.fetchPage(2)
+        let totalPages = try await sut.fetchTotalPages()
+        XCTAssertNil(page1)
+        XCTAssertNil(page2)
+        XCTAssertNil(totalPages, "start-fresh must also forget totalPages")
+    }
+
+    func test_deleteAllPages_leavesDetailsIntact() async throws {
+        try await sut.savePage(1, artworks: [Fixtures.artwork(id: 1)])
+        try await sut.saveDetail(Fixtures.artworkDetail(id: 1))
+
+        try await sut.deleteAllPages()
+
+        let detail = try await sut.fetchDetail(id: 1)
+        XCTAssertNotNil(detail)
+    }
+
+    func test_deleteAllPages_onEmptyStore_doesNotThrow() async throws {
+        try await sut.deleteAllPages()
+    }
+
+    func test_deleteAllDetails_removesEveryDetail() async throws {
+        try await sut.saveDetail(Fixtures.artworkDetail(id: 1))
+        try await sut.saveDetail(Fixtures.artworkDetail(id: 2))
+
+        try await sut.deleteAllDetails()
+
+        let first = try await sut.fetchDetail(id: 1)
+        let second = try await sut.fetchDetail(id: 2)
+        XCTAssertNil(first)
+        XCTAssertNil(second)
+    }
+
+    func test_deleteAllDetails_leavesPagesIntact() async throws {
+        try await sut.savePage(1, artworks: [Fixtures.artwork(id: 1)])
+        try await sut.saveDetail(Fixtures.artworkDetail(id: 1))
+
+        try await sut.deleteAllDetails()
+
+        let page = try await sut.fetchPage(1)
+        XCTAssertNotNil(page)
+    }
+
+    func test_deleteAllDetails_onEmptyStore_doesNotThrow() async throws {
+        try await sut.deleteAllDetails()
+    }
+
     // MARK: - Concurrency
 
     func test_concurrentSaves_allPagesPersist() async throws {

@@ -28,9 +28,11 @@ actor NetworkMonitor: NetworkMonitorProtocol {
 
     deinit {
         monitor.cancel()
-        // Never strand a parked call: if the monitor dies while callers are
-        // suspended, release them rather than leaking their tasks forever.
-        waiters.values.forEach { $0.resume() }
+        // Parked callers cannot exist here: an in-flight waitForConnection call
+        // retains this actor, so deinit is unreachable while anything is parked.
+        // Observer streams CAN outlive the monitor (a stream doesn't retain its
+        // source) — finish them so consumers' for-await loops end instead of
+        // hanging forever.
         observers.values.forEach { $0.finish() }
     }
 
@@ -56,7 +58,7 @@ actor NetworkMonitor: NetworkMonitorProtocol {
     func connectionUpdates() async -> AsyncStream<Bool> {
         let id = UUID()
         let (stream, continuation) = AsyncStream.makeStream(of: Bool.self)
-        continuation.yield(isConnected) // late subscribers still learn the current state
+        continuation.yield(isConnected)
         observers[id] = continuation
         continuation.onTermination = { [weak self] _ in
             Task { await self?.removeObserver(id) }
@@ -64,10 +66,13 @@ actor NetworkMonitor: NetworkMonitorProtocol {
         return stream
     }
 
-    // Internal (not private): the testable seam. Production's only caller is
-    // the NWPathMonitor callback; tests drive connectivity transitions directly.
+    // Internal (not private): test seam so parking assertions can wait
+    // deterministically for a caller to register instead of polling yields.
+    var parkedWaiterCount: Int { waiters.count }
+
+    
     func update(isConnected: Bool) {
-        guard isConnected != self.isConnected else { return } // NWPathMonitor can repeat states
+        guard isConnected != self.isConnected else { return }
         self.isConnected = isConnected
         observers.values.forEach { $0.yield(isConnected) }
 
