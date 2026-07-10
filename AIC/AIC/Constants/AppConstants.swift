@@ -11,4 +11,8 @@ enum AppConstants {
     enum Artist {
         static let featured = "Rembrandt van Rijn"
     }
+
+    enum API {
+        static let pageLimit = 20
+    }
 }
