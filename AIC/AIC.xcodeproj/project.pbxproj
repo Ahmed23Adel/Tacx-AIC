@@ -28,6 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		E261F23830017A0700BCA1C7 /* AIC.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = AIC.xctestplan; sourceTree = "<group>"; };
 		E29D88B93000357700A30AEA /* AIC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AIC.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E29D88C63000357B00A30AEA /* AICTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AICTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E29D88D03000357B00A30AEA /* AICUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AICUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -80,6 +81,7 @@
 		E29D88B03000357700A30AEA = {
 			isa = PBXGroup;
 			children = (
+				E261F23830017A0700BCA1C7 /* AIC.xctestplan */,
 				E29D88BB3000357700A30AEA /* AIC */,
 				E29D88C93000357B00A30AEA /* AICTests */,
 				E29D88D33000357B00A30AEA /* AICUITests */,

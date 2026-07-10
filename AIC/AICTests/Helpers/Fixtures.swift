@@ -128,6 +128,22 @@ enum Fixtures {
         )
     }
 
+    static func artworkDetailAllNil(id: Int) -> ArtworkDetail {
+        ArtworkDetail(
+            id: id,
+            title: nil,
+            artistDisplay: nil,
+            dateDisplay: nil,
+            mediumDisplay: nil,
+            dimensions: nil,
+            placeOfOrigin: nil,
+            creditLine: nil,
+            imageId: nil,
+            shortDescription: nil,
+            description: nil
+        )
+    }
+
     static func searchResponse(
         artworks: [Artwork]? = nil,
         pagination: Pagination? = nil

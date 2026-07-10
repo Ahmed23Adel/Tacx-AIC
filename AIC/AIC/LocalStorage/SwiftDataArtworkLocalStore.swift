@@ -91,18 +91,10 @@ actor SwiftDataArtworkLocalStore: ModelActor, SearchResultsLocalStoreProtocol, A
     // MARK: - Error boundary
 
     private func fetchFirst<T: PersistentModel>(_ descriptor: FetchDescriptor<T>) throws -> T? {
-        do {
-            return try modelContext.fetch(descriptor).first
-        } catch {
-            throw LocalStoreError.fetchFailed(underlying: error)
-        }
+        try LocalStoreErrorMapper.fetch { try modelContext.fetch(descriptor).first }
     }
 
     private func persist() throws {
-        do {
-            try modelContext.save()
-        } catch {
-            throw LocalStoreError.saveFailed(underlying: error)
-        }
+        try LocalStoreErrorMapper.save { try modelContext.save() }
     }
 }
