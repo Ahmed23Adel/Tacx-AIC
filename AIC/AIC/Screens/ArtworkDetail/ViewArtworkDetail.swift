@@ -131,7 +131,6 @@ struct ViewArtworkDetail: View {
         }
     }
 
-    @ViewBuilder
     private func facts(_ detail: ArtworkDetail) -> some View {
         VStack(spacing: 12) {
             if let dimensions = detail.dimensions {

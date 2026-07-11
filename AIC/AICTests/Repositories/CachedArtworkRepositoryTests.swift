@@ -355,6 +355,94 @@ final class CachedArtworkRepositoryTests: XCTestCase {
         }
     }
 
+    // MARK: - refreshArtworkDetail
+
+    func test_refreshArtworkDetail_deletesCachedCopyThenDownloads() async throws {
+        remote.stubbedDetailResult = .success(Fixtures.artworkDetail(id: 95998))
+
+        _ = try await sut.refreshArtworkDetail(id: 95998)
+
+        XCTAssertEqual(detailStore.deletedIds, [95998])
+        XCTAssertEqual(remote.requestedDetailIds, [95998])
+    }
+
+    func test_refreshArtworkDetail_bypassesAFreshCache() async throws {
+        // Even with a perfectly fresh cached copy, refresh must download.
+        detailStore.stubbedFetchDetailResult = .success(
+            CachedArtworkDetail(detail: Fixtures.artworkDetail(id: 95998, title: "Cached"), insertedAt: Self.frozenNow)
+        )
+        remote.stubbedDetailResult = .success(Fixtures.artworkDetail(id: 95998, title: "Fresh"))
+
+        let detail = try await sut.refreshArtworkDetail(id: 95998)
+
+        XCTAssertEqual(detail.title, "Fresh")
+        XCTAssertEqual(remote.requestedDetailIds, [95998])
+    }
+
+    func test_refreshArtworkDetail_savesTheFreshCopy() async throws {
+        remote.stubbedDetailResult = .success(Fixtures.artworkDetail(id: 95998))
+
+        _ = try await sut.refreshArtworkDetail(id: 95998)
+
+        XCTAssertEqual(detailStore.savedDetails.map(\.id), [95998])
+    }
+
+    func test_refreshArtworkDetail_deleteFails_propagatesWithoutDownloading() async {
+        detailStore.deleteDetailError = LocalStoreError.saveFailed(underlying: MockError.notStubbed)
+
+        do {
+            _ = try await sut.refreshArtworkDetail(id: 95998)
+            XCTFail("Expected LocalStoreError to propagate")
+        } catch is LocalStoreError {
+            XCTAssertTrue(remote.requestedDetailIds.isEmpty, "a failed delete must stop the refresh")
+        } catch {
+            XCTFail("Expected LocalStoreError, got \(error)")
+        }
+    }
+
+    // Documents the chosen delete-first semantics: if the download fails,
+    // the cached copy is already gone (owner's decision, kept as specified).
+    func test_refreshArtworkDetail_downloadFails_cacheWasAlreadyDeleted() async {
+        remote.stubbedDetailResult = .failure(NetworkError.serverError(statusCode: 500))
+
+        do {
+            _ = try await sut.refreshArtworkDetail(id: 95998)
+            XCTFail("Expected NetworkError to propagate")
+        } catch is NetworkError {
+            XCTAssertEqual(detailStore.deletedIds, [95998], "delete happens before the download attempt")
+        } catch {
+            XCTFail("Expected NetworkError, got \(error)")
+        }
+    }
+
+    func test_refreshArtworkDetail_saveFails_stillReturnsFreshDetail() async throws {
+        remote.stubbedDetailResult = .success(Fixtures.artworkDetail(id: 95998))
+        detailStore.saveDetailError = LocalStoreError.saveFailed(underlying: MockError.notStubbed)
+
+        let detail = try await sut.refreshArtworkDetail(id: 95998)
+
+        XCTAssertEqual(detail.id, 95998)
+    }
+
+    func test_refreshArtworkDetail_whenOffline_parksAndCompletesOnReconnection() async throws {
+        await monitor.close()
+        remote.stubbedDetailResult = .success(Fixtures.artworkDetail(id: 95998))
+        let completed = SendableFlag()
+
+        let task = Task { [sut] in
+            let detail = try await sut!.refreshArtworkDetail(id: 95998)
+            completed.set()
+            return detail
+        }
+
+        while await monitor.waitForConnectionCallCount == 0 { await Task.yield() }
+        XCTAssertFalse(completed.value, "refresh download must park while offline")
+
+        await monitor.open()
+        _ = try await task.value
+        XCTAssertTrue(completed.value)
+    }
+
     // MARK: - totalPages accessor
 
     func test_totalPages_returnsStoredValue() async {

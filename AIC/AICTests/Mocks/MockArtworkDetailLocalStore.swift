@@ -16,6 +16,7 @@ final class MockArtworkDetailLocalStore: ArtworkDetailLocalStoreProtocol {
     // Stubbable results
     var stubbedFetchDetailResult: Result<CachedArtworkDetail?, Error> = .success(nil)
     var saveDetailError: Error?
+    var deleteDetailError: Error?
     var deleteAllDetailsError: Error?
 
     func fetchDetail(id: Int) async throws -> CachedArtworkDetail? {
@@ -29,6 +30,7 @@ final class MockArtworkDetailLocalStore: ArtworkDetailLocalStoreProtocol {
     }
 
     func deleteDetail(id: Int) async throws {
+        if let deleteDetailError { throw deleteDetailError }
         deletedIds.append(id)
     }
 

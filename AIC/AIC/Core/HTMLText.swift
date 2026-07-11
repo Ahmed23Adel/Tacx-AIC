@@ -10,9 +10,10 @@ import UIKit
 
 enum HTMLText {
     static func attributedString(fromHTML html: String) -> AttributedString? {
-        guard let data = html.data(using: .utf8) else { return nil }
+        // Data(html.utf8) rather than data(using:): UTF-8 conversion of a
+        // Swift String is total, so no dead nil-branch.
         guard let imported = try? NSMutableAttributedString(
-            data: data,
+            data: Data(html.utf8),
             options: [
                 .documentType: NSAttributedString.DocumentType.html,
                 .characterEncoding: String.Encoding.utf8.rawValue,

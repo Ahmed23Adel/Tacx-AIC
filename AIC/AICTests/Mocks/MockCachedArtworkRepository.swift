@@ -38,9 +38,22 @@ final class MockCachedArtworkRepository: CachedArtworkRepositoryProtocol {
         suspendedSearch = nil
     }
 
+    // Optional suspension gate for the detail path, mirroring the search gate.
+    var suspendNextDetail = false
+    private var suspendedDetail: CheckedContinuation<Void, Never>?
+
     func artworkDetail(id: Int) async throws -> ArtworkDetail {
         requestedDetailIds.append(id)
+        if suspendNextDetail {
+            suspendNextDetail = false
+            await withCheckedContinuation { suspendedDetail = $0 }
+        }
         return try stubbedDetailResult.get()
+    }
+
+    func resumeSuspendedDetail() {
+        suspendedDetail?.resume()
+        suspendedDetail = nil
     }
 
     private(set) var refreshedDetailIds: [Int] = []
