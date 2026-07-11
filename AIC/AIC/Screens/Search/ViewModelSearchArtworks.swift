@@ -24,6 +24,17 @@ final class ViewModelSearchArtworks {
     /// Last successfully loaded page; 0 = nothing loaded yet.
     private var currentPage = 0
 
+    /// What Retry should re-attempt: always the operation that failed,
+    /// not a guess from list state (a failed refresh must retry the refresh,
+    /// never advance pagination).
+    private enum RetryIntent {
+        case firstPage
+        case nextPage
+        case refresh
+    }
+
+    private var retryIntent: RetryIntent?
+
     init(
         repository: CachedArtworkRepositoryProtocol,
         networkMonitor: NetworkMonitorProtocol,
@@ -86,10 +97,13 @@ final class ViewModelSearchArtworks {
 
     func retry() async {
         dismissError()
-        if artworks.isEmpty {
-            await loadFirstPage()
-        } else {
+        switch retryIntent {
+        case .refresh:
+            await refresh()
+        case .nextPage:
             await loadNextPage()
+        case .firstPage, nil:
+            await loadFirstPage()
         }
     }
 
@@ -97,6 +111,7 @@ final class ViewModelSearchArtworks {
     /// start over from page 1. Current content stays on screen until the
     /// fresh page 1 replaces it — never blank the list under the user.
     func refresh() async {
+        retryIntent = .refresh
         do {
             try await repository.clearCache()
             resetPagination()
@@ -121,6 +136,7 @@ final class ViewModelSearchArtworks {
     // MARK: - Loading
 
     private func loadFirstPage() async {
+        retryIntent = .firstPage
         isLoading = true
         defer { isLoading = false }
         await load(page: 1)
@@ -132,6 +148,7 @@ final class ViewModelSearchArtworks {
     }
 
     private func loadNextPage() async {
+        retryIntent = .nextPage
         isLoadingNextPage = true
         defer { isLoadingNextPage = false }
         await load(page: currentPage + 1)
@@ -150,10 +167,19 @@ final class ViewModelSearchArtworks {
         if loadedPage == 1 {
             artworks = page.artworks
         } else {
-            artworks += page.artworks
+            appendUnique(page.artworks)
         }
         totalPages = page.totalPages
         currentPage = loadedPage
+        retryIntent = nil
+    }
+
+    /// The API's relevance ranking drifts between requests, so an artwork can
+    /// legitimately arrive on two pages. Duplicate ids would break SwiftUI's
+    /// ForEach identity — keep the first occurrence only.
+    private func appendUnique(_ newArtworks: [Artwork]) {
+        let existingIds = Set(artworks.map(\.id))
+        artworks += newArtworks.filter { !existingIds.contains($0.id) }
     }
 
     private func handle(_ error: Error) {

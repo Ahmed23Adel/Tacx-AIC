@@ -33,10 +33,18 @@ actor MockNetworkMonitor: NetworkMonitorProtocol {
         await withCheckedContinuation { waiters.append($0) }
     }
 
+    /// When set, connectionUpdates() emits exactly this sequence then finishes —
+    /// lets ViewModel tests drive isOffline deterministically.
+    private var stubbedConnectionSequence: [Bool]?
+
+    func setConnectionSequence(_ sequence: [Bool]) {
+        stubbedConnectionSequence = sequence
+    }
+
     func connectionUpdates() async -> AsyncStream<Bool> {
-        let current = isOpen
+        let sequence = stubbedConnectionSequence ?? [isOpen]
         return AsyncStream { continuation in
-            continuation.yield(current)
+            sequence.forEach { continuation.yield($0) }
             continuation.finish()
         }
     }

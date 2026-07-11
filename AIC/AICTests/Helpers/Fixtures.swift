@@ -157,4 +157,9 @@ enum Fixtures {
     static func detailResponse(detail: ArtworkDetail? = nil) -> ArtworkDetailResponse {
         ArtworkDetailResponse(data: detail ?? Self.artworkDetail())
     }
+
+    /// A page of sequentially-numbered artworks for pagination tests.
+    static func artworkPage(ids: ClosedRange<Int>, totalPages: Int? = 13) -> ArtworkPage {
+        ArtworkPage(artworks: ids.map { Self.artwork(id: $0) }, totalPages: totalPages)
+    }
 }
