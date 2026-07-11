@@ -21,12 +21,8 @@ final class ViewModelSearchArtworks {
     private(set) var isOffline = false
     private(set) var errorMessage: String?
 
-    /// Last successfully loaded page; 0 = nothing loaded yet.
     private var currentPage = 0
 
-    /// What Retry should re-attempt: always the operation that failed,
-    /// not a guess from list state (a failed refresh must retry the refresh,
-    /// never advance pagination).
     private enum RetryIntent {
         case firstPage
         case nextPage
@@ -47,13 +43,10 @@ final class ViewModelSearchArtworks {
 
     // MARK: - Display state
 
-    /// Content is on screen but the device is offline: passive information only.
     var showsOfflineBanner: Bool {
         isOffline && !artworks.isEmpty
     }
 
-    /// Nothing to show and the request is parked at the connectivity gate:
-    /// a waiting state, not an error — the call completes itself on reconnect.
     var showsWaitingForConnection: Bool {
         isOffline && artworks.isEmpty && isLoading
     }
@@ -66,7 +59,6 @@ final class ViewModelSearchArtworks {
         errorMessage != nil
     }
 
-    /// Every page is on screen: show the end-of-list footer instead of a spinner.
     var showsEndOfList: Bool {
         !artworks.isEmpty && !paginationTracker.hasMorePages(currentPage: currentPage, totalPages: totalPages)
     }
@@ -78,8 +70,6 @@ final class ViewModelSearchArtworks {
         await loadFirstPage()
     }
 
-    /// Called as each row becomes visible; the tracker decides whether this
-    /// row's appearance means the next page should start downloading.
     func onRowAppear(_ artwork: Artwork) async {
         guard let index = artworks.firstIndex(where: { $0.id == artwork.id }) else { return }
 
@@ -107,9 +97,6 @@ final class ViewModelSearchArtworks {
         }
     }
 
-    /// Pull-to-refresh: wipe every cached page, artwork, and detail, then
-    /// start over from page 1. Current content stays on screen until the
-    /// fresh page 1 replaces it — never blank the list under the user.
     func refresh() async {
         retryIntent = .refresh
         do {
@@ -117,8 +104,6 @@ final class ViewModelSearchArtworks {
             resetPagination()
             await load(page: 1)
         } catch {
-            // clearCache failing is a real, user-initiated operation failing:
-            // surface it and keep the current content untouched.
             handle(error)
         }
     }
@@ -174,17 +159,12 @@ final class ViewModelSearchArtworks {
         retryIntent = nil
     }
 
-    /// The API's relevance ranking drifts between requests, so an artwork can
-    /// legitimately arrive on two pages. Duplicate ids would break SwiftUI's
-    /// ForEach identity — keep the first occurrence only.
     private func appendUnique(_ newArtworks: [Artwork]) {
         let existingIds = Set(artworks.map(\.id))
         artworks += newArtworks.filter { !existingIds.contains($0.id) }
     }
 
     private func handle(_ error: Error) {
-        // NetworkError and LocalStoreError both provide user-facing
-        // LocalizedError messages; localizedDescription is safe to show.
         errorMessage = error.localizedDescription
     }
 }

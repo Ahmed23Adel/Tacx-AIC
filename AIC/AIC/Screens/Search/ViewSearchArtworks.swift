@@ -131,6 +131,10 @@ private struct PreviewArtworkRepository: CachedArtworkRepositoryProtocol {
         throw NetworkError.invalidURL
     }
 
+    func refreshArtworkDetail(id: Int) async throws -> ArtworkDetail {
+        throw NetworkError.invalidURL
+    }
+
     func totalPages() async -> Int? { 13 }
 
     func clearCache() async throws {}

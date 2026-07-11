@@ -58,10 +58,21 @@ final class CachedArtworkRepository: CachedArtworkRepositoryProtocol {
         if let cached = try? await detailStore.fetchDetail(id: id), isFresh(cached.insertedAt) {
             return cached.detail
         }
+        return try await downloadDetail(id: id)
+    }
 
+    func refreshArtworkDetail(id: Int) async throws -> ArtworkDetail {
+        // Deletion failure propagates: like clearCache, the delete IS part of
+        // what the user asked for. The download then bypasses any cache read.
+        try await detailStore.deleteDetail(id: id)
+        return try await downloadDetail(id: id)
+    }
+
+    private func downloadDetail(id: Int) async throws -> ArtworkDetail {
         await networkMonitor.waitForConnection()
         let detail = try await remote.artworkDetail(id: id)
 
+        // Cache writes are best-effort: a failed save must not fail the request.
         try? await detailStore.saveDetail(detail)
 
         return detail

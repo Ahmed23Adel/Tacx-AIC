@@ -43,6 +43,14 @@ final class MockCachedArtworkRepository: CachedArtworkRepositoryProtocol {
         return try stubbedDetailResult.get()
     }
 
+    private(set) var refreshedDetailIds: [Int] = []
+    var stubbedRefreshDetailResult: Result<ArtworkDetail, Error> = .failure(MockError.notStubbed)
+
+    func refreshArtworkDetail(id: Int) async throws -> ArtworkDetail {
+        refreshedDetailIds.append(id)
+        return try stubbedRefreshDetailResult.get()
+    }
+
     func totalPages() async -> Int? {
         stubbedTotalPages
     }

@@ -29,7 +29,11 @@ struct AppCoordinator: View {
     private func destination(for route: AppRoute) -> some View {
         switch route {
         case .artworkDetail(let id):
-            ViewArtworkDetail(artworkId: id)
+            ViewArtworkDetail(viewModel: ViewModelArtworkDetail(
+                artworkId: id,
+                repository: dependencies.artworkRepository,
+                networkMonitor: dependencies.networkMonitor
+            ))
         }
     }
 }
