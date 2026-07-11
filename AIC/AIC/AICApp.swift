@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct AICApp: App {
+    private let dependencies = AppDependencies()
+
     var body: some Scene {
         WindowGroup {
-            AppCoordinator()
+            AppCoordinator(dependencies: dependencies)
         }
     }
 }

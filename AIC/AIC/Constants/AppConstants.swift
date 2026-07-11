@@ -14,6 +14,8 @@ enum AppConstants {
 
     enum API {
         static let pageLimit = 20
+        static let baseURL = "https://api.artic.edu/api/v1"
+        static let iiifImageBaseURL = "https://www.artic.edu/iiif/2"
     }
 
     enum Cache {

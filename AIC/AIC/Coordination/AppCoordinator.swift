@@ -9,14 +9,18 @@ import SwiftUI
 
 
 struct AppCoordinator: View {
+    let dependencies: AppDependencies
     @State private var coordinator = Coordinator()
 
     var body: some View {
         NavigationStack(path: $coordinator.path) {
-            ViewSearchArtworks()
-                .navigationDestination(for: AppRoute.self) { route in
-                    destination(for: route)
-                }
+            ViewSearchArtworks(viewModel: ViewModelSearchArtworks(
+                repository: dependencies.artworkRepository,
+                networkMonitor: dependencies.networkMonitor
+            ))
+            .navigationDestination(for: AppRoute.self) { route in
+                destination(for: route)
+            }
         }
         .environment(coordinator)
     }
@@ -31,5 +35,5 @@ struct AppCoordinator: View {
 }
 
 #Preview {
-    AppCoordinator()
+    AppCoordinator(dependencies: AppDependencies())
 }
