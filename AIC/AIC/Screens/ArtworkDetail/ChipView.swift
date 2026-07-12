@@ -7,37 +7,23 @@
 
 import SwiftUI
 
+/// Small rounded tag for short values (the artwork's date). Long values
+/// belong in DetailInfoRow, which wraps.
 struct ChipView: View {
-    enum Style {
-        case tinted
-        case neutral
-    }
-
     let text: String
-    let style: Style
 
     var body: some View {
         Text(text)
             .font(.subheadline.weight(.medium))
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
-            .foregroundStyle(style == .tinted ? Color.accentColor : .primary)
-            .background(background)
+            .foregroundStyle(Color.accentColor)
+            .background(Color.accentColor.opacity(0.15))
             .clipShape(Capsule())
-    }
-
-    private var background: Color {
-        switch style {
-        case .tinted: Color.accentColor.opacity(0.15)
-        case .neutral: Color(.secondarySystemFill)
-        }
     }
 }
 
 #Preview {
-    HStack {
-        ChipView(text: "1930", style: .tinted)
-        ChipView(text: "Oil on beaverboard", style: .neutral)
-    }
-    .padding()
+    ChipView(text: "1660/62")
+        .padding()
 }

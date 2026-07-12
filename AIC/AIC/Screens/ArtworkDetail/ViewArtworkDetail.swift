@@ -117,22 +117,20 @@ struct ViewArtworkDetail: View {
         }
     }
 
+    // Only the date is a chip — it's always short. Medium can be a full
+    // paragraph, so it lives in the facts rows where long values wrap.
     @ViewBuilder
     private func chips(_ detail: ArtworkDetail) -> some View {
-        if detail.dateDisplay != nil || detail.mediumDisplay != nil {
-            HStack(spacing: 10) {
-                if let date = detail.dateDisplay {
-                    ChipView(text: date, style: .tinted)
-                }
-                if let medium = detail.mediumDisplay {
-                    ChipView(text: medium, style: .neutral)
-                }
-            }
+        if let date = detail.dateDisplay {
+            ChipView(text: date)
         }
     }
 
     private func facts(_ detail: ArtworkDetail) -> some View {
         VStack(spacing: 12) {
+            if let medium = detail.mediumDisplay {
+                DetailInfoRow(label: "Medium", value: medium)
+            }
             if let dimensions = detail.dimensions {
                 DetailInfoRow(label: "Dimensions", value: dimensions)
             }
@@ -205,7 +203,7 @@ private struct PreviewDetailRepository: CachedArtworkRepositoryProtocol {
             id: id,
             title: "American Gothic",
             artistDisplay: "Grant Wood, American, 1891–1942",
-            dateDisplay: "1930",
+            dateDisplay: "1635, printed 1906",
             mediumDisplay: "Oil on beaverboard",
             dimensions: "78 × 65.3 cm",
             placeOfOrigin: "United States",
