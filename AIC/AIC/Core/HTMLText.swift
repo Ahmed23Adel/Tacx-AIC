@@ -13,9 +13,6 @@ import UIKit
 /// bold/italic traits — so Dynamic Type and dark mode keep working instead
 /// of inheriting the importer's fixed Times New Roman.
 enum HTMLText {
-    /// - Parameter parse: the HTML→attributed-string step, injectable so the
-    ///   failure path is testable (the system importer practically never
-    ///   throws for text). Production uses the default `parseHTML`.
     static func attributedString(
         fromHTML html: String,
         parse: (Data) throws -> NSAttributedString = HTMLText.parseHTML
@@ -38,8 +35,6 @@ enum HTMLText {
         return AttributedString(imported)
     }
 
-    /// Body text style keeping only the bold/italic traits of `font`.
-    /// Internal for direct testing of each trait path.
     static func bodyFont(preserving font: UIFont?) -> UIFont {
         let body = UIFont.preferredFont(forTextStyle: .body)
         let sourceTraits = font?.fontDescriptor.symbolicTraits ?? []

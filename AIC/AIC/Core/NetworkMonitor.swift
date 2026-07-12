@@ -28,11 +28,6 @@ actor NetworkMonitor: NetworkMonitorProtocol {
 
     deinit {
         monitor.cancel()
-        // Parked callers cannot exist here: an in-flight waitForConnection call
-        // retains this actor, so deinit is unreachable while anything is parked.
-        // Observer streams CAN outlive the monitor (a stream doesn't retain its
-        // source) — finish them so consumers' for-await loops end instead of
-        // hanging forever.
         observers.values.forEach { $0.finish() }
     }
 
@@ -41,15 +36,9 @@ actor NetworkMonitor: NetworkMonitorProtocol {
         let id = UUID()
         await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
-                // No re-check of isConnected needed: this actor holds continuously
-                // from the guard above through this synchronous continuation body
-                // (withCheckedContinuation runs it before actually suspending), so
-                // update(isConnected:) cannot interleave and flip the value here.
                 waiters[id] = continuation
             }
         } onCancel: {
-            // Resume the waiter so the parked task can exit; the network call
-            // it proceeds to will fail fast with a cancellation error.
             Task { await self.removeWaiter(id) }
         }
     }
@@ -65,8 +54,6 @@ actor NetworkMonitor: NetworkMonitorProtocol {
         return stream
     }
 
-    // Internal (not private): test seam so parking assertions can wait
-    // deterministically for a caller to register instead of polling yields.
     var parkedWaiterCount: Int { waiters.count }
 
     
