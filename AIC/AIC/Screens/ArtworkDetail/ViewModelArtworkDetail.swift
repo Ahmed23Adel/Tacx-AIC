@@ -7,6 +7,7 @@
 
 import Foundation
 import Observation
+import os
 
 @Observable
 final class ViewModelArtworkDetail {
@@ -76,12 +77,14 @@ final class ViewModelArtworkDetail {
 
     func onAppear() async {
         guard detail == nil else { return }
+        AppLogger.viewModel.debug("detail \(self.artworkId, privacy: .public): onAppear — loading")
         await loadDetail()
     }
 
     /// Pull-to-refresh: delete THIS artwork's cached detail and download a
     /// fresh copy. Current content stays visible until replaced.
     func refresh() async {
+        AppLogger.viewModel.notice("detail \(self.artworkId, privacy: .public): pull-to-refresh")
         retryIntent = .refresh
         do {
             let fresh = try await repository.refreshArtworkDetail(id: artworkId)
@@ -93,6 +96,7 @@ final class ViewModelArtworkDetail {
 
     func retry() async {
         dismissError()
+        AppLogger.viewModel.notice("detail \(self.artworkId, privacy: .public): retry (intent: \(String(describing: self.retryIntent), privacy: .public))")
         switch retryIntent {
         case .refresh:
             await refresh()
@@ -139,6 +143,7 @@ final class ViewModelArtworkDetail {
     }
 
     private func handle(_ error: Error) {
+        AppLogger.viewModel.error("detail \(self.artworkId, privacy: .public): surfacing error to user — \(String(describing: error), privacy: .public)")
         // NetworkError and LocalStoreError both provide user-facing
         // LocalizedError messages; localizedDescription is safe to show.
         errorMessage = error.localizedDescription

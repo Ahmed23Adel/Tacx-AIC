@@ -7,6 +7,7 @@
 
 import Foundation
 import Network
+import os
 
 actor NetworkMonitor: NetworkMonitorProtocol {
     private let monitor = NWPathMonitor()
@@ -34,11 +35,13 @@ actor NetworkMonitor: NetworkMonitorProtocol {
     func waitForConnection() async {
         guard !isConnected else { return }
         let id = UUID()
+        AppLogger.connectivity.notice("call parking (offline) — \(self.waiters.count + 1, privacy: .public) waiter(s) after this one")
         await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
                 waiters[id] = continuation
             }
         } onCancel: {
+            AppLogger.connectivity.notice("parked call cancelled — releasing waiter")
             Task { await self.removeWaiter(id) }
         }
     }
@@ -56,13 +59,16 @@ actor NetworkMonitor: NetworkMonitorProtocol {
 
     var parkedWaiterCount: Int { waiters.count }
 
-    
     func update(isConnected: Bool) {
         guard isConnected != self.isConnected else { return }
         self.isConnected = isConnected
+        AppLogger.connectivity.notice("connectivity changed -> \(isConnected ? "ONLINE" : "OFFLINE", privacy: .public)")
         observers.values.forEach { $0.yield(isConnected) }
 
         guard isConnected else { return }
+        if !waiters.isEmpty {
+            AppLogger.connectivity.notice("resuming \(self.waiters.count, privacy: .public) parked call(s)")
+        }
         waiters.values.forEach { $0.resume() }
         waiters.removeAll()
     }

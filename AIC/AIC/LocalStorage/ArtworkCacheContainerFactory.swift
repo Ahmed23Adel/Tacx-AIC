@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import os
 
 enum ArtworkCacheContainerFactory {
     static var defaultStoreURL: URL {
@@ -56,17 +57,23 @@ enum ArtworkCacheContainerFactory {
         removeItem: (URL) -> Void
     ) -> ModelContainer {
         if let container = try? make(false, storeURL) {
+            AppLogger.storage.debug("cache container opened normally on disk")
             return container
         }
+
         // Corrupt or schema-incompatible store: rebuildable from the network.
+        AppLogger.storage.error("cache container failed to open — wiping store and retrying")
         removeItem(storeURL)
         if let container = try? make(false, storeURL) {
+            AppLogger.storage.notice("cache container recreated on disk after wipe")
             return container
         }
+
         // Disk unusable entirely — degrade to in-memory. force unwrap OK:
         // an in-memory store with a valid schema has no external dependency
         // that can fail; only a malformed schema would, which is a programmer
         // error caught in development (same category as a bad URL literal).
+        AppLogger.storage.fault("disk store unusable after wipe — degrading to IN-MEMORY cache (no persistence across launches)")
         return try! make(true, storeURL)
     }
 }

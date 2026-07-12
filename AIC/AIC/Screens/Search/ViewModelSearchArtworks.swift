@@ -7,6 +7,7 @@
 
 import Foundation
 import Observation
+import os
 
 @Observable
 final class ViewModelSearchArtworks {
@@ -67,6 +68,7 @@ final class ViewModelSearchArtworks {
 
     func onAppear() async {
         guard artworks.isEmpty else { return }
+        AppLogger.viewModel.debug("search: onAppear — loading page 1")
         await loadFirstPage()
     }
 
@@ -82,11 +84,13 @@ final class ViewModelSearchArtworks {
         )
         guard shouldLoad else { return }
 
+        AppLogger.viewModel.debug("search: row \(index, privacy: .public)/\(self.artworks.count, privacy: .public) triggered prefetch of page \(self.currentPage + 1, privacy: .public)")
         await loadNextPage()
     }
 
     func retry() async {
         dismissError()
+        AppLogger.viewModel.notice("search: retry (intent: \(String(describing: self.retryIntent), privacy: .public))")
         switch retryIntent {
         case .refresh:
             await refresh()
@@ -98,6 +102,7 @@ final class ViewModelSearchArtworks {
     }
 
     func refresh() async {
+        AppLogger.viewModel.notice("search: pull-to-refresh — clearing cache and reloading page 1")
         retryIntent = .refresh
         do {
             try await repository.clearCache()
@@ -165,6 +170,7 @@ final class ViewModelSearchArtworks {
     }
 
     private func handle(_ error: Error) {
+        AppLogger.viewModel.error("search: surfacing error to user — \(String(describing: error), privacy: .public)")
         errorMessage = error.localizedDescription
     }
 }

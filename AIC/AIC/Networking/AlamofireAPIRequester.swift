@@ -7,6 +7,7 @@
 
 import Foundation
 import Alamofire
+import os
 
 final class AlamofireAPIRequester: APIRequester {
     private let baseURL: URL
@@ -20,6 +21,7 @@ final class AlamofireAPIRequester: APIRequester {
 
     func send<E: Endpoint>(_ endpoint: E) async throws -> E.Response {
         let url = baseURL.appendingPathComponent(endpoint.path)
+        AppLogger.network.debug("-> \(endpoint.method.rawValue, privacy: .public) \(endpoint.path, privacy: .public) \(endpoint.parameters, privacy: .public)")
 
         let response = await session
             .request(url, method: endpoint.method, parameters: endpoint.parameters, encoding: URLEncoding.default)
@@ -29,8 +31,12 @@ final class AlamofireAPIRequester: APIRequester {
 
         switch response.result {
         case .success(let value):
+            let statusCode = response.response?.statusCode ?? -1
+            AppLogger.network.debug("<- \(statusCode, privacy: .public) \(endpoint.path, privacy: .public)")
             return value
         case .failure(let error):
+            let statusCode = response.response?.statusCode ?? -1
+            AppLogger.network.error("<- \(statusCode, privacy: .public) \(endpoint.path, privacy: .public) — \(String(describing: error), privacy: .public)")
             throw errorMapper.networkError(from: error, statusCode: response.response?.statusCode)
         }
     }
