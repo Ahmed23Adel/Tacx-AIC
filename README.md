@@ -1,9 +1,9 @@
-# AIC — Art Institute of Chicago Browser
+ # AIC — Art Institute of Chicago Browser
 
 A SwiftUI app that browses works by a chosen artist (**Rembrandt van Rijn**) from the
 [Art Institute of Chicago API](https://api.artic.edu/docs/): a paginated thumbnail feed and a
 rich detail screen, with a **5‑minute cache**, **offline request parking**, and a suite of
-**270 unit tests** covering ~100% of the business logic.
+**285 unit + integration tests** covering ~100% of the business logic.
 
 ## Table of Contents
 
@@ -22,9 +22,10 @@ rich detail screen, with a **5‑minute cache**, **offline request parking**, an
 - [Data exploration](#11-data-exploration)
 - [Nullability Strategy](#12-nullability-strategy--building-for-a-year-from-now)
 - [Testing](#13-testing)
-- [Coding style](#14-coding-style)
-- [Dependencies](#15-dependencies)
-- [Known limitations](#16-known-limitations--possible-next-steps)
+- [Debug logging & tracing](#14-debug-logging--tracing)
+- [Coding style](#15-coding-style)
+- [Dependencies](#16-dependencies)
+- [Known limitations](#17-known-limitations--possible-next-steps)
 - [Assumptions](#assumptions)
 ---
 
@@ -211,7 +212,7 @@ artwork, whether to serve local data or hit the network — and when there's no 
 | Persistence | SwiftData |
 | Networking | Alamofire |
 | Images | Kingfisher |
-| Tests | 270 unit tests; ~100% of business‑logic files |
+| Tests | 285 unit + integration tests; ~100% of business‑logic files |
 
 ---
 
@@ -230,7 +231,7 @@ Every requirement from the assignment, mapped to where it lives:
 | On start, don't call API if cache not expired | ✅ | `CachedArtworkRepository.searchArtworks(page:)` |
 | Inform the user when a fetch error occurs | ✅ | Error alert (VMs → `LocalizedError` messages) |
 | Park the call when offline, run it on reconnect | ✅ | `NetworkMonitor.waitForConnection()` |
-| Cover the code with unit tests | ✅ | `AICTests/` (270 tests, ~100% business logic) |
+| Cover the code with unit tests | ✅ | `AICTests/` (285 tests, ~100% business logic) |
 
 ---
 
@@ -299,7 +300,7 @@ type escapes this layer.
 
 ---
 
-<h2>5. Component Diagram</h2>
+<h2>5. Components of the system</h2>
 
 <p>
 The application follows a <strong>protocol-oriented architecture</strong> where each layer depends on
@@ -378,7 +379,7 @@ implementations at application launch, including <code>CachedArtworkRepository</
 
 ## 6. Data flow — how a page request is decided
 
-<img width="370" height="554" alt="Screenshot 2026-07-12 at 4 18 10 PM" src="https://github.com/user-attachments/assets/04e0b275-4116-4286-b76f-72061a28894e" />
+<img width="370" height="554" alt="Screenshot 2026-07-12 at 4 18 10 PM" src="https://github.com/user-attachments/assets/04e0b275-4116-4286-b76f-72061a28894e" />
 
 
 
@@ -532,7 +533,7 @@ a year from now**, rather than optimise for today's exact payload.
 
 ## 13. Testing
 
-- **270 unit + integration tests**, ~**100% coverage of every business‑logic file** (models,
+- **285 unit + integration tests**, ~**100% coverage of every business‑logic file** (models,
   networking, local storage, repositories, view models, coordinator, and the pure helpers). UI
   view bodies are excluded by design (they contain no logic and are exercised manually / are
   XCUITest territory).
@@ -544,10 +545,35 @@ a year from now**, rather than optimise for today's exact payload.
   - error paths are made reachable via **seams** (e.g. the injectable HTML `parse` step, the
     injectable container `make`/`removeItem`), so even "framework can't‑fail" branches are covered;
   - **in‑memory SwiftData** containers make persistence tests fast and isolated.
-- **Unit tests**: pure logic is unit‑tested with mocks; the real Alamofire
-  stack is tested over a stubbed `URLProtocol`; the real SwiftData recovery is tested by planting a
-  corrupt store file; and a small set of live‑API tests (skippable via `SKIP_LIVE_TESTS`) prove the
-  end‑to‑end path against the real API.
+- **Both unit and integration tests.** Pure logic is unit‑tested against mocks — that proves each
+  unit's own decisions are correct in isolation, but it can't prove the *real* collaborators still
+  cooperate the way the mocks assume. So a second layer of tests wires the real pieces together,
+  with the wire replaced only at the outermost edge:
+  - **`CachedArtworkRepositoryIntegrationTests`** — the real `CachedArtworkRepository` wired to a
+    real `SwiftDataArtworkLocalStore` (in‑memory), a real `ArtworkRepository` +
+    `AlamofireAPIRequester` (stubbed only at the wire via `MockURLProtocol`), and a real
+    `NetworkMonitor` driven deterministically. It proves, against real persistence and real
+    connectivity: cache‑first download‑then‑hit, TTL expiry triggering a real redownload,
+    **page‑level cache independence** (a stale page must not evict a fresh neighbour — the core
+    per‑page caching claim), real offline parking and reconnect‑triggered completion, `clearCache`
+    actually wiping persisted rows, per‑artwork refresh only touching that artwork's row, and real
+    server errors flowing through the full stack as `NetworkError`.
+  - **`ViewModelSearchArtworksFullStackIntegrationTests`** — wires `ViewModelSearchArtworks` to
+    that same real stack, closing the matching gap one layer up (view models had otherwise only
+    ever seen a mock repository): initial load, offline‑then‑reconnect driving the real waiting
+    state, pull‑to‑refresh through the real cache, and infinite scroll triggering a real second
+    page download.
+  - **`AlamofireAPIRequesterIntegrationTests`** — the real Alamofire `Session` over a stubbed
+    `URLProtocol` (request building, JSON decoding, error mapping, all real).
+  - **`LocalStorePersistenceIntegrationTests`** / **`NetworkMonitorLivePathIntegrationTests`** —
+    real SwiftData recovery tested by planting a corrupt store file on disk; the real
+    `NWPathMonitor` wiring exercised end‑to‑end.
+  - **`LiveAPIIntegrationTests`** — a small set of tests against the real AIC API, skippable via
+    `SKIP_LIVE_TESTS`, proving the end‑to‑end path actually works outside of any stub.
+
+  Time in the integration suite is simulated the same way unit tests do it — by building a second
+  repository instance against the **same** in‑memory container with a later injected clock — so
+  the 5‑minute TTL boundary is proven without a real 5‑minute wait.
 - Test files mirror the source layout (`AICTests/Networking`, `/LocalStorage`, `/Repositories`,
   `/Screens`, `/Core`, `/Coordination`, `/Integration`, plus `/Mocks` and `/Helpers`).
 
@@ -571,7 +597,43 @@ a year from now**, rather than optimise for today's exact payload.
 
 ---
 
-## 14. Coding style
+## 14. Debug logging & tracing
+
+The app uses Apple's unified logging (`os.Logger`), not `print()`, at the points that matter most
+for tracing the caching/offline behaviour with a debugger or Console.app.
+**`Core/AppLogger.swift`** defines five categories, each independently filterable (Xcode console,
+or Console.app filtered by the app's bundle id as subsystem):
+
+| Category | What it traces |
+|---|---|
+| `Cache` | Every caching decision: **HIT** (with cache age in seconds), **MISS/STALE**, download success/failure, `clearCache` / `refreshArtworkDetail` |
+| `Connectivity` | Connectivity flips (`-> ONLINE` / `OFFLINE`), a call **parking** (with live waiter count), and parked calls being **resumed** or **cancelled** |
+| `Network` | Every HTTP request out and response in, through the real Alamofire stack |
+| `Storage` | The cache container's resilient‑recovery path — normal open, corrupt‑store wipe, or (at `.fault`, the loudest level) degrading to in‑memory |
+| `ViewModel` | User‑triggered actions: appear, scroll‑triggered prefetch, retry (with which intent), pull‑to‑refresh, and every error actually shown to the user |
+
+**Reading a real trace.** Scrolling near the end of the list while offline, then reconnecting,
+produces exactly this story in order:
+
+```
+[ViewModel]    search: row 15/20 triggered prefetch of page 2
+[Cache]        page 2: cache MISS/STALE — requesting network access
+[Connectivity] call parking (offline) — 1 waiter(s) after this one
+        … user reconnects …
+[Connectivity] connectivity changed -> ONLINE
+[Connectivity] resuming 1 parked call(s)
+[Network]      -> GET /artworks/search ["page": "2", …]
+[Network]      <- 200 /artworks/search
+[Cache]        page 2: downloaded 20 artworks, totalPages=13
+```
+
+That single trace demonstrates, end to end, the two hardest‑to‑observe requirements in the
+assignment: the request was parked while offline and resumed automatically on reconnect, and it
+only reached the network because the cache had genuinely missed.
+
+---
+
+## 15. Coding style
 
 - **Protocol‑oriented + dependency injection** as the default; concrete types only at the edges,
   assembled in one composition root.
@@ -589,7 +651,7 @@ a year from now**, rather than optimise for today's exact payload.
 
 ---
 
-## 15. Dependencies
+## 16. Dependencies
 
 Managed with **Swift Package Manager** (resolve automatically on open):
 
@@ -602,7 +664,7 @@ Persistence uses Apple's **SwiftData** (no third‑party dependency).
 
 ---
 
-## 16. Known limitations & possible next steps
+## 17. Known limitations & possible next steps
 
 Honest list of what a longer engagement would add:
 
@@ -622,3 +684,4 @@ Honest list of what a longer engagement would add:
   is still shown, with an offline banner).
 - Image URLs are built client‑side from `image_id` using the IIIF endpoint
   (`/full/200,/…` for thumbnails, `/full/843,/…` for the hero image).
+c
