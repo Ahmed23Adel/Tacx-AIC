@@ -1,4 +1,4 @@
- # AIC — Art Institute of Chicago Browser
+# AIC — Art Institute of Chicago Browser
 
 A SwiftUI app that browses works by a chosen artist (**Rembrandt van Rijn**) from the
 [Art Institute of Chicago API](https://api.artic.edu/docs/): a paginated thumbnail feed and a
@@ -23,9 +23,10 @@ rich detail screen, with a **5‑minute cache**, **offline request parking**, an
 - [Nullability Strategy](#12-nullability-strategy--building-for-a-year-from-now)
 - [Testing](#13-testing)
 - [Debug logging & tracing](#14-debug-logging--tracing)
-- [Coding style](#15-coding-style)
-- [Dependencies](#16-dependencies)
-- [Known limitations](#17-known-limitations--possible-next-steps)
+- [Performance profiling](#15-performance-profiling-instruments--time-profiler)
+- [Coding style](#16-coding-style)
+- [Dependencies](#17-dependencies)
+- [Known limitations](#18-known-limitations--possible-next-steps)
 - [Assumptions](#assumptions)
 ---
 
@@ -300,7 +301,7 @@ type escapes this layer.
 
 ---
 
-<h2>5. Components of the system</h2>
+<h2>5. Component Diagram</h2>
 
 <p>
 The application follows a <strong>protocol-oriented architecture</strong> where each layer depends on
@@ -600,7 +601,11 @@ a year from now**, rather than optimise for today's exact payload.
 ## 14. Debug logging & tracing
 
 The app uses Apple's unified logging (`os.Logger`), not `print()`, at the points that matter most
-for tracing the caching/offline behaviour with a debugger or Console.app.
+for tracing the caching/offline behaviour with a debugger or Console.app attached — `print()`
+output is unstructured scrollback with no severity and no way to filter; `os.Logger` output is
+categorised, leveled, and stays useful in a release build instead of being something to strip out
+later.
+
 **`Core/AppLogger.swift`** defines five categories, each independently filterable (Xcode console,
 or Console.app filtered by the app's bundle id as subsystem):
 
@@ -633,7 +638,88 @@ only reached the network because the cache had genuinely missed.
 
 ---
 
-## 15. Coding style
+## 15. Performance profiling (Instruments — Time Profiler)
+
+Beyond correctness, I ran the app through Xcode's **Time Profiler** while scrolling the search
+feed to check the app isn't doing anything wasteful on the main thread.
+
+### What it confirmed was healthy
+
+- **Hangs: "No Graphs".** Zero detected across the whole trace.
+- **Thermal state: Nominal** for the entire run — no sustained CPU pressure that would throttle
+  the device or drain the battery unusually fast.
+- **The main thread's time is spent where it should be.** ~83% of sampled main‑thread work
+  resolves into `__CFRunLoopRun` → `_UIUpdateSequence…` → `CA::Layer::layout_and_display` — that's
+  SwiftUI/UIKit's own layout‑and‑compositing loop doing its job while cells scroll into view, not
+  app code being slow. In absolute terms the CPU graph shows clear idle gaps between spikes, not
+  sustained load.
+
+
+
+<p align="center">
+  <img width="1255" height="952" alt="time-full" src="https://github.com/user-attachments/assets/d7a3f11e-17d6-4a5a-bb1e-9db623231c0d" />
+
+  <br />
+  <sub>Time Profiler overview — CPU usage, thermal state, and the Hangs instrument</sub>
+</p>
+
+### What it found: JPEG decoding running in periodic spikes
+
+Zooming into one of the CPU spikes, the heaviest stack in that window was:
+
+```
+recode_all                    (AppleJPEG)
+ └─ applejpeg_decode_image…    (AppleJPEG)
+     └─ aj_mcu_decode_prog…    (AppleJPEG)
+         └─ aj_prog_decode_AC_…(AppleJPEG)
+```
+
+That's the AIC image CDN serving **progressive JPEGs**, which decode in several passes and cost
+noticeably more CPU than a baseline JPEG — one decode per artwork thumbnail/hero image as it
+scrolls into view, which is why the CPU graph looks like a comb while scrolling.
+
+<p align="center">
+  <img width="542" height="800" alt="time-spike" src="https://github.com/user-attachments/assets/c38d728b-fa4a-4ef1-9de3-cbcb982253c5" />
+
+  <br />
+  <sub>Zoomed into a CPU spike — heaviest stack trace resolves into AppleJPEG decode frames</sub>
+</p>
+
+<p>
+The image decoding work was running on a background thread, not the UI thread. In Instruments,
+the stack appeared on <code>AIC (0x5676c1)</code> rather than <code>Main Thread</code>, which
+confirmed that the work was being executed off the main thread and was not blocking the UI.
+</p>
+
+### The avoidable part
+
+The image was decoded at **full downloaded size** even though it's displayed much smaller — the
+843px hero image was fully decompressed into memory before SwiftUI ever scaled it down for layout,
+and the same happened for every 200px list thumbnail rendered at 64pt. That's real, avoidable CPU
+and memory that doesn't buy anything visually: the extra pixels are thrown away the instant
+SwiftUI lays the image into its frame.
+
+### The suggested fix
+
+Kingfisher's `DownsamplingImageProcessor` uses ImageIO to decode the JPEG **directly at the
+target display size** instead of decoding full‑size and downscaling afterward — cheaper CPU per
+decode, and a decoded 64pt thumbnail bitmap costs kilobytes instead of megabytes.
+
+### What was applied
+
+`DownsamplingImageProcessor(size:)` on both `KFImage` call sites, sized in **pixels** (`points ×
+displayScale`, read from `@Environment(\.displayScale)`:
+
+- **`ArtworkRowView`** — downsamples to the 64pt row thumbnail's pixel size.
+- **`ViewArtworkDetail`** — downsamples to the hero image's actual on‑screen size, read from
+  `GeometryReader` rather than hard‑coded, so it's correct on every device width.
+
+  
+Both also set `.scaleFactor(displayScale)` so the *original* download stays in the disk cache while the *processed* (already‑downsampled) bitmap is what lives in the memory cache — re‑scrolling reuses the cheap version instead of re‑decoding.
+
+---
+
+## 16. Coding style
 
 - **Protocol‑oriented + dependency injection** as the default; concrete types only at the edges,
   assembled in one composition root.
@@ -651,7 +737,7 @@ only reached the network because the cache had genuinely missed.
 
 ---
 
-## 16. Dependencies
+## 17. Dependencies
 
 Managed with **Swift Package Manager** (resolve automatically on open):
 
@@ -664,7 +750,7 @@ Persistence uses Apple's **SwiftData** (no third‑party dependency).
 
 ---
 
-## 17. Known limitations & possible next steps
+## 18. Known limitations & possible next steps
 
 Honest list of what a longer engagement would add:
 
@@ -672,6 +758,9 @@ Honest list of what a longer engagement would add:
   detail → expand → refresh) would cover the view bodies and exercise the accessibility identifiers.
 - **Localization.** User‑facing strings use `String(localized:)` and are ready for a string
   catalog, but only English is provided.
+- **Image downsampling.** Time Profiler (§15) found images decoding at full downloaded size
+  instead of at their display size — `DownsamplingImageProcessor` would cut per‑image CPU/memory
+  cost with no behaviour change.
 
 ---
 
@@ -684,4 +773,3 @@ Honest list of what a longer engagement would add:
   is still shown, with an offline banner).
 - Image URLs are built client‑side from `image_id` using the IIIF endpoint
   (`/full/200,/…` for thumbnails, `/full/843,/…` for the hero image).
-c
