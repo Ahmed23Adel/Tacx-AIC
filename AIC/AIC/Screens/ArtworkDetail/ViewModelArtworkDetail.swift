@@ -134,7 +134,7 @@ final class ViewModelArtworkDetail {
 
     private func apply(_ detail: ArtworkDetail) {
         self.detail = detail
-        fullDescription = detail.description.flatMap(HTMLText.attributedString(fromHTML:))
+        fullDescription = detail.description.flatMap { HTMLText.attributedString(fromHTML: $0) }
         retryIntent = nil
     }
 

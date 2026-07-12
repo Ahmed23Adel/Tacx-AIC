@@ -41,12 +41,11 @@ actor NetworkMonitor: NetworkMonitorProtocol {
         let id = UUID()
         await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
-                // Re-check: connectivity may have arrived between the guard and here.
-                if isConnected {
-                    continuation.resume()
-                } else {
-                    waiters[id] = continuation
-                }
+                // No re-check of isConnected needed: this actor holds continuously
+                // from the guard above through this synchronous continuation body
+                // (withCheckedContinuation runs it before actually suspending), so
+                // update(isConnected:) cannot interleave and flip the value here.
+                waiters[id] = continuation
             }
         } onCancel: {
             // Resume the waiter so the parked task can exit; the network call
