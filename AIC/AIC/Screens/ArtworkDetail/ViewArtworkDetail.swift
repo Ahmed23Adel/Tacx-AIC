@@ -10,6 +10,11 @@ import Kingfisher
 
 struct ViewArtworkDetail: View {
     @State private var viewModel: ViewModelArtworkDetail
+    @Environment(\.displayScale) private var displayScale
+
+    private enum Layout {
+        static let heroHeight: CGFloat = 300
+    }
 
     init(viewModel: ViewModelArtworkDetail) {
         _viewModel = State(initialValue: viewModel)
@@ -55,7 +60,7 @@ struct ViewArtworkDetail: View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    heroImage(imageId: detail.imageId, topInset: geometry.safeAreaInsets.top)
+                    heroImage(imageId: detail.imageId, topInset: geometry.safeAreaInsets.top, availableWidth: geometry.size.width)
 
                     VStack(alignment: .leading, spacing: 20) {
                         header(detail)
@@ -82,8 +87,14 @@ struct ViewArtworkDetail: View {
 
     // MARK: - Sections
 
-    private func heroImage(imageId: String?, topInset: CGFloat) -> some View {
-        KFImage(ArtworkImageURL.full(imageId: imageId))
+    private func heroImage(imageId: String?, topInset: CGFloat, availableWidth: CGFloat) -> some View {
+        let displayHeight = Layout.heroHeight + topInset
+        let pixelSize = CGSize(width: availableWidth * displayScale, height: displayHeight * displayScale)
+
+        return KFImage(ArtworkImageURL.full(imageId: imageId))
+            .setProcessor(DownsamplingImageProcessor(size: pixelSize))
+            .scaleFactor(displayScale)
+            .cacheOriginalImage()
             .placeholder {
                 ZStack {
                     Color(.secondarySystemBackground)
@@ -95,7 +106,7 @@ struct ViewArtworkDetail: View {
             .resizable()
             .scaledToFill()
             .frame(maxWidth: .infinity)
-            .frame(height: 300 + topInset) // taller by the notch area it covers
+            .frame(height: displayHeight) // taller by the notch area it covers
             .clipped()
             .padding(.top, -topInset) // pulled up out of the safe area
             .accessibilityHidden(true)

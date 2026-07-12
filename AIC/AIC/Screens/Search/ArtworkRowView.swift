@@ -11,6 +11,8 @@ import Kingfisher
 struct ArtworkRowView: View {
     let artwork: Artwork
 
+    @Environment(\.displayScale) private var displayScale
+
     private enum Layout {
         static let imageSize: CGFloat = 64
         static let cornerRadius: CGFloat = 10
@@ -47,7 +49,12 @@ struct ArtworkRowView: View {
     }
 
     private var thumbnail: some View {
-        KFImage(ArtworkImageURL.thumbnail(imageId: artwork.imageId))
+        let pixelSize = CGSize(width: Layout.imageSize * displayScale, height: Layout.imageSize * displayScale)
+
+        return KFImage(ArtworkImageURL.thumbnail(imageId: artwork.imageId))
+            .setProcessor(DownsamplingImageProcessor(size: pixelSize))
+            .scaleFactor(displayScale)
+            .cacheOriginalImage()
             .placeholder {
                 Image(systemName: "photo")
                     .foregroundStyle(.tertiary)
