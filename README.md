@@ -18,15 +18,14 @@ rich detail screen, with a **5‑minute cache**, **offline request parking**, an
 - [Caching behaviour](#7-caching-behaviour--the-four-modes)
 - [Separation of concerns](#8-separation-of-concerns)
 - [Local storage layer](#9-local-storage-layer)
-- [UI & Accessibility](#10-ui-accessibility-lightdarkhigh-contrast)
+- [UI & Accessibility, Light/Dark/High Contrast](#10-ui--accessibility-lightdarkhigh-contrast)
 - [Data exploration](#11-data-exploration)
-- [Nullability strategy](#12-nullability-strategy---building-for-a-year-from-now)
+- [Nullability Strategy](#12-nullability-strategy--building-for-a-year-from-now)
 - [Testing](#13-testing)
 - [Coding style](#14-coding-style)
 - [Dependencies](#15-dependencies)
 - [Known limitations](#16-known-limitations--possible-next-steps)
 - [Assumptions](#assumptions)
-- 
 ---
 
 ## 🎨 Design
@@ -476,7 +475,7 @@ Key decisions:
 
 ---
 
-## 10. UI, accessibility, light/dark/high‑contrast
+## 10. UI & Accessibility, Light/Dark/High Contrast
 
 - **System colours & text styles everywhere.** `Color.accentColor`, `.primary`/`.secondary`/
   `.tertiary`, `Color(.secondarySystemBackground)`, and Dynamic‑Type text styles (`.largeTitle`,
