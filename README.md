@@ -127,7 +127,7 @@ The detail screen adapts to the available artwork description.
 
 ### Offline Experience
 
-When cached data is available, artworks remain accessible while offline for 5 minuts.
+When cached data is available, artworks remain accessible while offline for 5 minutes.
 
 <table>
 <tr>
