@@ -759,6 +759,13 @@ around the composition root and the cache‑policy layer.
 - **Consistent naming** (`View…` / `ViewModel…`, `…Protocol`, `…Endpoint`/`…Response`,
   `Cached…Entity`) and per‑layer folders.
 
+### Linting (SwiftLint)
+
+Style is enforced with **SwiftLint** (`.swiftlint.yml` at the repo root). The config is tuned to this
+codebase's conventions — a few rules are disabled or relaxed with an inline justification each — and
+the code was run through `swiftlint --fix` so it passes cleanly.
+
+
 ---
 
 ## 18. Dependencies
