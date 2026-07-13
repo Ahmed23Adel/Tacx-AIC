@@ -299,7 +299,7 @@ type escapes this layer.
 | **Composition Root** | `AppDependencies` | One place builds the concrete graph; nothing below constructs its own dependencies. |
 | **Factory** | `ArtworkCacheContainerFactory` | Encapsulates SwiftData container creation + resilient recovery in one place. |
 | **Adapter / Anti‑Corruption** | `AFErrorMapper`, `LocalStoreErrorMapper`, `HTMLText`, DTO→domain mapping | Translates each foreign vocabulary (Alamofire errors, SwiftData errors, HTML, JSON) into the app's own at the boundary. |
-| **Strategy (injected)** | `DateProviding`, `NetworkMonitorProtocol`, endpoint `parse` step | Swappable behaviour that also makes time, connectivity, and parsing testable. |
+| **Strategy (injected)** | `DateProviding`, and `NetworkMonitorProtocol` | Swappable behaviour that also makes time, connectivity, and parsing testable. |
 | **Prefetch policy** | `PaginationTracker` | Pure, dependency‑free decision object for "should the next page load now?". |
 
 ---
