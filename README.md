@@ -780,7 +780,10 @@ Honest list of what a longer engagement would add:
   detail → expand → refresh) would cover the view bodies and exercise the accessibility identifiers.
 - **Localization.** User‑facing strings use `String(localized:)` and are ready for a string
   catalog, but only English is provided.
-
+- **Data virtualization.** Loaded pages are currently retained for the lifetime of the screen,
+  so memory usage grows as the user continues scrolling. For very large datasets, a sliding-window
+  approach could keep only nearby pages in memory and reload older ones from cache when needed,
+  keeping memory usage bounded.
 ---
 
 ## Assumptions
