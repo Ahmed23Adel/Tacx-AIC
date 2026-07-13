@@ -105,8 +105,7 @@ struct ViewArtworkDetail: View {
             }
             .resizable()
             .scaledToFill()
-            .frame(maxWidth: .infinity)
-            .frame(height: displayHeight) // taller by the notch area it covers
+            .frame(width: availableWidth, height: displayHeight) // taller by the notch area it covers
             .clipped()
             .padding(.top, -topInset) // pulled up out of the safe area
             .accessibilityHidden(true)
