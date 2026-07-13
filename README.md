@@ -780,9 +780,6 @@ Honest list of what a longer engagement would add:
   detail → expand → refresh) would cover the view bodies and exercise the accessibility identifiers.
 - **Localization.** User‑facing strings use `String(localized:)` and are ready for a string
   catalog, but only English is provided.
-- **Image downsampling.** Time Profiler (§15) found images decoding at full downloaded size
-  instead of at their display size — `DownsamplingImageProcessor` would cut per‑image CPU/memory
-  cost with no behaviour change.
 
 ---
 
