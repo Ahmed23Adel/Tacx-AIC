@@ -24,9 +24,10 @@ rich detail screen, with a **5‑minute cache**, **offline request parking**, an
 - [Testing](#13-testing)
 - [Debug logging & tracing](#14-debug-logging--tracing)
 - [Performance profiling](#15-performance-profiling-instruments--time-profiler)
-- [Coding style](#16-coding-style)
-- [Dependencies](#17-dependencies)
-- [Known limitations](#18-known-limitations--possible-next-steps)
+- [Memory graph debugging](#16-memory-graph-debugging-xcode)
+- [Coding style](#17-coding-style)
+- [Dependencies](#18-dependencies)
+- [Known limitations](#19-known-limitations--possible-next-steps)
 - [Assumptions](#assumptions)
 ---
 
@@ -719,7 +720,28 @@ Both also set `.scaleFactor(displayScale)` so the *original* download stays in t
 
 ---
 
-## 16. Coding style
+## 16. Memory graph debugging (Xcode)
+
+Beyond CPU, I ran Xcode's **Memory Graph Debugger** after a browsing session (launch → open a few
+artwork detail screens → navigate back to the list) to check for retain cycles and leaked objects
+around the composition root and the cache‑policy layer.
+
+<p align="center">
+<img width="874" height="615" alt="Screenshot 2026-07-13 at 2 26 07 AM" src="https://github.com/user-attachments/assets/4b67e0fe-1336-426a-a311-8ca4ef9cf328" />
+  <br />
+  <sub>Memory graph rooted at AppDependencies after opening and closing several artwork details</sub>
+</p>
+
+**Findings:**
+
+- **No retain cycles.** Every arrow in the graph flows one direction — outward from
+  `AppDependencies` into `NetworkMonitor` / `CachedArtworkRepository` and down into their
+  collaborators. Nothing points back up toward an ancestor, and Xcode raises no leaked‑object
+  warning for any node here.
+
+---
+
+## 17. Coding style
 
 - **Protocol‑oriented + dependency injection** as the default; concrete types only at the edges,
   assembled in one composition root.
@@ -737,7 +759,7 @@ Both also set `.scaleFactor(displayScale)` so the *original* download stays in t
 
 ---
 
-## 17. Dependencies
+## 18. Dependencies
 
 Managed with **Swift Package Manager** (resolve automatically on open):
 
@@ -750,7 +772,7 @@ Persistence uses Apple's **SwiftData** (no third‑party dependency).
 
 ---
 
-## 18. Known limitations & possible next steps
+## 19. Known limitations & possible next steps
 
 Honest list of what a longer engagement would add:
 
