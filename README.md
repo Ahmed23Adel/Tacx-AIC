@@ -5,6 +5,7 @@ A SwiftUI app that browses works by a chosen artist (**Rembrandt van Rijn**) fro
 rich detail screen, with a **5‑minute cache**, **offline request parking**, and a suite of
 **285 unit + integration tests** covering ~100% of the business logic.
 
+
 ## Table of Contents
 
 - [Design](#-design)
@@ -28,6 +29,7 @@ rich detail screen, with a **5‑minute cache**, **offline request parking**, an
 - [Coding style](#17-coding-style)
 - [Dependencies](#18-dependencies)
 - [Known limitations](#19-known-limitations--possible-next-steps)
+- [Swift Concurrency](#20-swift-concurrency)
 - [Assumptions](#assumptions)
 ---
 
@@ -240,7 +242,7 @@ Every requirement from the assignment, mapped to where it lives:
 ## 3. Build & run
 
 1. Open `AIC.xcodeproj` in Xcode.
-2. Select any iOS 26.5+ simulator or device.
+2. Select any iOS 17.6+ simulator or device.
 3. **⌘R** to run. No setup, keys, or config files — all SPM dependencies resolve automatically.
 
 **Tests:** **⌘U**. To see coverage: Scheme → Test → Options → enable *Code Coverage*, then read the
@@ -785,6 +787,23 @@ Honest list of what a longer engagement would add:
   approach could keep only nearby pages in memory and reload older ones from cache when needed,
   keeping memory usage bounded.
 ---
+
+## 20. Swift Concurrency
+
+The app is built end‑to‑end on **structured Swift Concurrency** (`async`/`await`, actors).
+
+- **`async`/`await` end to end.** From the ViewModel down through `CachedArtworkRepository` →
+  `ArtworkRepository` → `AlamofireAPIRequester`, every call is an `async` function.
+- **Actor isolation for connectivity.** `NetworkMonitor` is the single source of truth for
+  connectivity state; its internal state (current path, list of waiters) is actor‑isolated so
+  simultaneous calls from multiple screens can't race on the same state.
+- **Parked requests as suspended tasks.** "Parking" a call while offline is literally an `await`
+  on a continuation that the `NetworkMonitor` actor holds onto: the calling `Task` suspends
+  (rather than polling or blocking a thread), and the actor resumes every waiting continuation the
+  instant the path flips to `.satisfied` — which is why a parked request completes automatically
+  on reconnect with no extra retry logic anywhere else in the app.
+
+----
 
 ## Assumptions
 
