@@ -39,6 +39,9 @@ The app's visual design (layout, spacing, colour usage, the detail screen compos
 prototyped with **Claude design** before implementation — deliberately kept simple and modern
 rather than over‑styled, then translated to SwiftUI using system colours and text styles.
 
+
+
+
 <table align="center">
   <tr>
     <td align="center">
@@ -49,7 +52,7 @@ rather than over‑styled, then translated to SwiftUI using system colours and t
       <b>Search Screen</b>
     </td>
     <td align="center">
-      <img src="https://github.com/user-attachments/assets/a3d7c23c-0fa3-4032-83e6-351d00772b2d"
+      <img src="https://github.com/user-attachments/assets/65d08908-469a-4cb9-b66d-991f2df7fbcf"
            alt="Detail Screen"
            width="280" />
       <br />
