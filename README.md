@@ -554,37 +554,8 @@ a year from now**, rather than optimise for today's exact payload.
   - **in‑memory SwiftData** containers make persistence tests fast and isolated.
 - **Both unit and integration tests.** Pure logic is unit‑tested against mocks — that proves each
   unit's own decisions are correct in isolation, but it can't prove the *real* collaborators still
-  cooperate the way the mocks assume. So a second layer of tests wires the real pieces together,
-  with the wire replaced only at the outermost edge:
-  - **`CachedArtworkRepositoryIntegrationTests`** — the real `CachedArtworkRepository` wired to a
-    real `SwiftDataArtworkLocalStore` (in‑memory), a real `ArtworkRepository` +
-    `AlamofireAPIRequester` (stubbed only at the wire via `MockURLProtocol`), and a real
-    `NetworkMonitor` driven deterministically. It proves, against real persistence and real
-    connectivity: cache‑first download‑then‑hit, TTL expiry triggering a real redownload,
-    **page‑level cache independence** (a stale page must not evict a fresh neighbour — the core
-    per‑page caching claim), real offline parking and reconnect‑triggered completion, `clearCache`
-    actually wiping persisted rows, per‑artwork refresh only touching that artwork's row, and real
-    server errors flowing through the full stack as `NetworkError`.
-  - **`ViewModelSearchArtworksFullStackIntegrationTests`** — wires `ViewModelSearchArtworks` to
-    that same real stack, closing the matching gap one layer up (view models had otherwise only
-    ever seen a mock repository): initial load, offline‑then‑reconnect driving the real waiting
-    state, pull‑to‑refresh through the real cache, and infinite scroll triggering a real second
-    page download.
-  - **`AlamofireAPIRequesterIntegrationTests`** — the real Alamofire `Session` over a stubbed
-    `URLProtocol` (request building, JSON decoding, error mapping, all real).
-  - **`LocalStorePersistenceIntegrationTests`** / **`NetworkMonitorLivePathIntegrationTests`** —
-    real SwiftData recovery tested by planting a corrupt store file on disk; the real
-    `NWPathMonitor` wiring exercised end‑to‑end.
-  - **`LiveAPIIntegrationTests`** — a small set of tests against the real AIC API, skippable via
-    `SKIP_LIVE_TESTS`, proving the end‑to‑end path actually works outside of any stub.
-
-  Time in the integration suite is simulated the same way unit tests do it — by building a second
-  repository instance against the **same** in‑memory container with a later injected clock — so
-  the 5‑minute TTL boundary is proven without a real 5‑minute wait.
-- Test files mirror the source layout (`AICTests/Networking`, `/LocalStorage`, `/Repositories`,
-  `/Screens`, `/Core`, `/Coordination`, `/Integration`, plus `/Mocks` and `/Helpers`).
-
-
+  cooperate the way the mocks assume. 
+ 
 <p align="center">
   <img
     src="https://github.com/user-attachments/assets/b60f2c3d-37a6-488f-a134-07bb9225e6b7"
